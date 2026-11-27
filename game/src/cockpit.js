@@ -1,167 +1,385 @@
-// Ember Fjord — the cockpit.
-// A real 3D panel parented to the camera: six round gauges, each with its
-// own metal bezel and its own lit canvas face, plus the canopy frame.
-// The faces are MeshBasicMaterial, so the instruments glow in the dusk
-// instead of sitting dark on a black slab.
+// Ember Fjord — the cockpit, rebuilt as an F-35 panoramic display.
+// One wide backlit touchscreen replaces the six round gauges: the left
+// half shows live flight data (speed, altitude, heading, attitude and a
+// top-down jet schematic), the right half a moving map plus engine
+// system bars. Below it sits the small centre pedestal with its keypad
+// and a live readout. The faces are MeshBasicMaterial, so the display
+// glows in the dusk instead of sitting dark on a black slab.
 
 import * as THREE from 'three';
 
-const GAUGE_SIZE = 256;
+const PANO_W = 1024;
+const PANO_H = 336;
+const PED_W = 512;
+const PED_H = 128;
 
-function faceCanvas() {
+const CYAN = '#7fe7ff';
+const GREEN = '#7dff9a';
+const AMBER = '#ffcf5a';
+const DIM = '#5a7a94';
+const WHITE = '#eef4ff';
+const LINE = '#1e4a5a';
+
+function makeCanvas(w, h) {
   const c = document.createElement('canvas');
-  c.width = GAUGE_SIZE;
-  c.height = GAUGE_SIZE;
+  c.width = w;
+  c.height = h;
   return c;
 }
 
-function drawRoundGauge(g, value, min, max, label, unit, accent) {
-  const S = GAUGE_SIZE;
-  const cx = S / 2;
-  const cy = S / 2;
-  const R = S / 2 - 8;
-  g.clearRect(0, 0, S, S);
-  // Face.
-  g.beginPath();
-  g.arc(cx, cy, R, 0, Math.PI * 2);
-  g.fillStyle = '#0d1522';
-  g.fill();
-  g.lineWidth = 4;
-  g.strokeStyle = '#2a3648';
-  g.stroke();
-  // Coloured arc (green to amber).
-  g.beginPath();
-  g.arc(cx, cy, R - 14, -Math.PI * 0.75, Math.PI * 0.15);
-  g.strokeStyle = accent;
-  g.lineWidth = 7;
-  g.stroke();
-  // Ticks.
-  for (let i = 0; i <= 10; i++) {
-    const a = -Math.PI * 0.75 + (i / 10) * Math.PI * 1.5;
-    const inner = i % 5 === 0 ? R - 26 : R - 20;
-    g.beginPath();
-    g.moveTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
-    g.lineTo(cx + Math.cos(a) * (R - 12), cy + Math.sin(a) * (R - 12));
-    g.strokeStyle = '#c8d4e8';
-    g.lineWidth = i % 5 === 0 ? 4 : 2;
-    g.stroke();
-  }
-  // Needle.
-  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  const na = -Math.PI * 0.75 + t * Math.PI * 1.5;
-  g.beginPath();
-  g.moveTo(cx, cy);
-  g.lineTo(cx + Math.cos(na) * (R - 34), cy + Math.sin(na) * (R - 34));
-  g.strokeStyle = '#ffe9a8';
-  g.lineWidth = 6;
-  g.stroke();
-  g.beginPath();
-  g.arc(cx, cy, 10, 0, Math.PI * 2);
-  g.fillStyle = '#e8eef8';
-  g.fill();
-  // Digital readout + label.
-  g.fillStyle = '#ffffff';
-  g.font = 'bold 44px sans-serif';
-  g.textAlign = 'center';
-  g.fillText(String(Math.round(value)), cx, cy + 62);
-  g.font = 'bold 26px sans-serif';
-  g.fillStyle = '#9fb4d8';
-  g.fillText(label, cx, cy + 96);
-  if (unit) {
-    g.font = '22px sans-serif';
-    g.fillText(unit, cx, cy - 58);
-  }
-}
-
-function drawAttitude(g, pitchDeg, rollDeg) {
-  const S = GAUGE_SIZE;
-  const cx = S / 2;
-  const cy = S / 2;
-  const R = S / 2 - 8;
-  g.clearRect(0, 0, S, S);
+function drawAttitude(g, cx, cy, r, pitchDeg, rollDeg) {
   g.save();
   g.beginPath();
-  g.arc(cx, cy, R, 0, Math.PI * 2);
+  g.arc(cx, cy, r, 0, Math.PI * 2);
   g.clip();
   g.translate(cx, cy);
   g.rotate((rollDeg * Math.PI) / 180);
-  const dy = (pitchDeg / 30) * R;
-  g.fillStyle = '#3a7bd8';
-  g.fillRect(-R, -R + dy, R * 2, R - dy + R);
+  const dy = (pitchDeg / 30) * r;
+  g.fillStyle = '#2f6fd0';
+  g.fillRect(-r, -r + dy, r * 2, r - dy + r);
   g.fillStyle = '#8a5a2a';
-  g.fillRect(-R, dy, R * 2, R * 2);
+  g.fillRect(-r, dy, r * 2, r * 2);
   g.fillStyle = '#ffffff';
-  g.fillRect(-R, dy - 2, R * 2, 4);
+  g.fillRect(-r, dy - 2, r * 2, 4);
   g.restore();
   g.beginPath();
-  g.arc(cx, cy, R, 0, Math.PI * 2);
-  g.lineWidth = 4;
-  g.strokeStyle = '#2a3648';
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.lineWidth = 3;
+  g.strokeStyle = '#2a4a5e';
   g.stroke();
   // Fixed aircraft symbol.
   g.strokeStyle = '#ffe9a8';
-  g.lineWidth = 7;
+  g.lineWidth = 5;
   g.beginPath();
-  g.moveTo(cx - 52, cy);
-  g.lineTo(cx - 14, cy);
-  g.moveTo(cx + 14, cy);
-  g.lineTo(cx + 52, cy);
-  g.moveTo(cx, cy - 8);
-  g.lineTo(cx, cy + 8);
+  g.moveTo(cx - 34, cy);
+  g.lineTo(cx - 10, cy);
+  g.moveTo(cx + 10, cy);
+  g.lineTo(cx + 34, cy);
+  g.moveTo(cx, cy - 6);
+  g.lineTo(cx, cy + 6);
   g.stroke();
-  g.fillStyle = '#9fb4d8';
-  g.font = 'bold 26px sans-serif';
+}
+
+function drawJetSchematic(g, cx, cy) {
+  // Top-down F-35 outline: pointed nose, swept wings, twin canted tails.
+  g.save();
+  g.translate(cx, cy);
+  g.strokeStyle = CYAN;
+  g.lineWidth = 2.5;
+  g.beginPath();
+  g.moveTo(0, -52);
+  g.lineTo(10, -28);
+  g.lineTo(14, 0);
+  g.lineTo(52, 18);
+  g.lineTo(52, 26);
+  g.lineTo(16, 14);
+  g.lineTo(30, 34);
+  g.lineTo(30, 40);
+  g.lineTo(14, 34);
+  g.lineTo(10, 44);
+  g.lineTo(-10, 44);
+  g.lineTo(-14, 34);
+  g.lineTo(-30, 40);
+  g.lineTo(-30, 34);
+  g.lineTo(-16, 14);
+  g.lineTo(-52, 26);
+  g.lineTo(-52, 18);
+  g.lineTo(-14, 0);
+  g.lineTo(-10, -28);
+  g.closePath();
+  g.stroke();
+  // Gold canopy dot.
+  g.fillStyle = AMBER;
+  g.beginPath();
+  g.arc(0, -14, 5, 0, Math.PI * 2);
+  g.fill();
+  g.restore();
+}
+
+function drawPanoramic(g, s) {
+  const W = PANO_W;
+  const H = PANO_H;
+  // Background: dark navy, slightly lighter at the top.
+  const grad = g.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0d1a2e');
+  grad.addColorStop(1, '#0a101d');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, W, H);
+  // Frame.
+  g.lineWidth = 3;
+  g.strokeStyle = '#2a4a5e';
+  g.strokeRect(2, 2, W - 4, H - 4);
+  g.lineWidth = 1;
+  g.strokeStyle = '#16303f';
+  g.strokeRect(8, 8, W - 16, H - 16);
+
+  // Top bar.
+  g.fillStyle = '#0e2233';
+  g.fillRect(8, 8, W - 16, 30);
+  g.fillStyle = CYAN;
+  g.font = 'bold 20px sans-serif';
+  g.textAlign = 'left';
+  g.fillText('F-35 LIGHTNING II', 20, 30);
+  g.textAlign = 'right';
+  g.fillText('MACH ' + s.mach.toFixed(2), W - 20, 30);
+
+  // Centre divider.
+  g.strokeStyle = LINE;
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(512, 44);
+  g.lineTo(512, H - 10);
+  g.stroke();
+
+  // ---- LEFT: live flight data ----
+  const cols = [
+    { x: 100, value: Math.round(s.kts), label: 'KTS', accent: GREEN },
+    { x: 256, value: Math.round(s.altFt), label: 'ALT FT', accent: CYAN },
+    { x: 412, value: Math.round(s.hdgDeg) + '°', label: 'HDG', accent: AMBER },
+  ];
+  for (const c of cols) {
+    g.fillStyle = WHITE;
+    g.font = 'bold 72px sans-serif';
+    g.textAlign = 'center';
+    g.fillText(String(c.value), c.x, 118);
+    g.fillStyle = CYAN;
+    g.font = 'bold 20px sans-serif';
+    g.fillText(c.label, c.x, 146);
+    g.fillStyle = c.accent;
+    g.fillRect(c.x - 42, 154, 84, 3);
+  }
+  // Attitude.
+  g.fillStyle = DIM;
+  g.font = 'bold 16px sans-serif';
   g.textAlign = 'center';
-  g.fillText('ATT', cx, cy + R - 14);
+  g.fillText('ATTITUDE', 110, 182);
+  drawAttitude(g, 110, 242, 56, s.pitchDeg, s.rollDeg);
+  // Jet schematic.
+  drawJetSchematic(g, 330, 240);
+  g.fillStyle = DIM;
+  g.font = 'bold 16px sans-serif';
+  g.fillText('A/C', 330, 306);
+  // VS / THR line.
+  g.fillStyle = WHITE;
+  g.font = 'bold 20px sans-serif';
+  g.textAlign = 'left';
+  g.fillText('VS ' + Math.round(s.vsFpm) + ' FPM', 16, 322);
+  g.textAlign = 'right';
+  g.fillText('THR ' + Math.round(s.thr * 100) + '%', 496, 322);
+
+  // ---- RIGHT: moving map + systems ----
+  // Map window.
+  const mx = 528;
+  const my = 44;
+  const mw = 330;
+  const mh = 282;
+  g.fillStyle = '#081120';
+  g.fillRect(mx, my, mw, mh);
+  g.strokeStyle = '#16303f';
+  g.lineWidth = 1;
+  g.strokeRect(mx, my, mw, mh);
+  // Grid.
+  g.strokeStyle = '#12283a';
+  for (let gx = mx + 30; gx < mx + mw; gx += 30) {
+    g.beginPath();
+    g.moveTo(gx, my);
+    g.lineTo(gx, my + mh);
+    g.stroke();
+  }
+  for (let gy = my + 30; gy < my + mh; gy += 30) {
+    g.beginPath();
+    g.moveTo(mx, gy);
+    g.lineTo(mx + mw, gy);
+    g.stroke();
+  }
+  // Valley walls.
+  g.strokeStyle = '#2a4a6a';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(mx + 12, my + mh - 6);
+  g.lineTo(mx + 42, my + 176);
+  g.lineTo(mx + 32, my + 76);
+  g.lineTo(mx + 62, my + 6);
+  g.stroke();
+  g.beginPath();
+  g.moveTo(mx + mw - 12, my + mh - 6);
+  g.lineTo(mx + mw - 42, my + 176);
+  g.lineTo(mx + mw - 32, my + 76);
+  g.lineTo(mx + mw - 62, my + 6);
+  g.stroke();
+  // Heading tape along the top of the map.
+  g.fillStyle = CYAN;
+  g.font = 'bold 15px sans-serif';
+  g.textAlign = 'center';
+  for (let d = -20; d <= 20; d += 10) {
+    const h = ((Math.round(s.hdgDeg) + d) % 360 + 360) % 360;
+    const x = mx + mw / 2 + d * 6;
+    g.fillRect(x - 1, my + 4, 2, d % 20 === 0 ? 12 : 7);
+    if (d % 20 === 0) g.fillText(String(h).padStart(3, '0'), x, my + 30);
+  }
+  // Ring ahead + own-ship symbol (heading-up: the ring is straight up).
+  const jx = mx + mw / 2;
+  const jy = my + mh - 42;
+  const rx = jx;
+  const ry = my + 95;
+  g.strokeStyle = CYAN;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.arc(rx, ry, 24, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = CYAN;
+  g.font = 'bold 15px sans-serif';
+  g.fillText('RING', rx, ry - 32);
+  g.strokeStyle = GREEN;
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(jx, jy - 12);
+  g.lineTo(rx, ry + 26);
+  g.stroke();
+  g.fillStyle = GREEN;
+  g.beginPath();
+  g.moveTo(jx, jy - 14);
+  g.lineTo(jx - 9, jy + 8);
+  g.lineTo(jx + 9, jy + 8);
+  g.closePath();
+  g.fill();
+  // System bars.
+  const sys = [
+    { y: 60, label: 'FUEL', value: Math.round(s.fuel) + '%', frac: s.fuel / 100, color: GREEN },
+    { y: 140, label: 'EGT', value: Math.round(s.egt) + '°C', frac: (s.egt - 300) / 600, color: AMBER },
+    { y: 220, label: 'THR', value: Math.round(s.thr * 100) + '%', frac: s.thr, color: CYAN },
+  ];
+  for (const b of sys) {
+    const bx = 872;
+    g.fillStyle = DIM;
+    g.font = 'bold 18px sans-serif';
+    g.textAlign = 'left';
+    g.fillText(b.label, bx, b.y);
+    g.fillStyle = WHITE;
+    g.font = 'bold 30px sans-serif';
+    g.fillText(b.value, bx, b.y + 32);
+    g.fillStyle = '#12283a';
+    g.fillRect(bx, b.y + 42, 128, 12);
+    g.fillStyle = b.color;
+    g.fillRect(bx, b.y + 42, Math.max(4, 128 * Math.min(1, Math.max(0, b.frac))), 12);
+  }
+  g.fillStyle = GREEN;
+  g.font = 'bold 16px sans-serif';
+  g.textAlign = 'left';
+  g.fillText('SYS NOMINAL', 872, 316);
+}
+
+function drawPedestal(g, s) {
+  const W = PED_W;
+  const H = PED_H;
+  g.fillStyle = '#0d141d';
+  g.fillRect(0, 0, W, H);
+  g.lineWidth = 3;
+  g.strokeStyle = '#2a4a5e';
+  g.strokeRect(2, 2, W - 4, H - 4);
+  // Live readout line.
+  g.fillStyle = CYAN;
+  g.font = 'bold 24px sans-serif';
+  g.textAlign = 'center';
+  g.fillText(
+    'THR ' + Math.round(s.thr * 100) + '%   •   FUEL ' + Math.round(s.fuel) + '%',
+    W / 2,
+    34,
+  );
+  // Keypad grid.
+  g.strokeStyle = DIM;
+  g.lineWidth = 2;
+  g.fillStyle = DIM;
+  g.font = 'bold 18px sans-serif';
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const x = 56 + col * 140;
+      const y = 48 + row * 36;
+      g.strokeRect(x, y, 120, 28);
+      g.fillText(String(row * 3 + col + 1), x + 60, y + 21);
+    }
+  }
+  // Status LEDs.
+  g.fillStyle = GREEN;
+  g.beginPath();
+  g.arc(36, 62, 5, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = AMBER;
+  g.beginPath();
+  g.arc(36, 98, 5, 0, Math.PI * 2);
+  g.fill();
 }
 
 export function buildCockpit(camera) {
   const group = new THREE.Group();
   const bezelMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2f38,
-    metalness: 0.85,
-    roughness: 0.35,
+    color: 0x1c2129,
+    metalness: 0.7,
+    roughness: 0.45,
   });
   const panelMat = new THREE.MeshStandardMaterial({
     color: 0x232a35,
     metalness: 0.4,
     roughness: 0.6,
   });
-  // Dashboard slab, low in the view so the gauges sit in the lower third.
-  // It leans back toward the pilot; the gauges ride on its face, tilted
-  // the same way, so they read as full circles instead of thin ellipses.
-  const panel = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 0.16), panelMat);
-  panel.position.set(0, -0.35, -1.1);
-  panel.rotation.x = -0.5;
-  group.add(panel);
+  // Panoramic display bezel + screen, low in the view so the screen sits
+  // in the lower third and the ring stays visible above it. The screen
+  // leans back toward the pilot, like the real F-35's panel. It sits
+  // farther out than the old gauge panel so its full height fits in
+  // frame instead of running off the bottom edge.
+  const bezel = new THREE.Mesh(new THREE.BoxGeometry(1.83, 0.65, 0.08), bezelMat);
+  bezel.position.set(0, -0.4, -1.53);
+  bezel.rotation.x = -0.4;
+  group.add(bezel);
 
-  const defs = [
-    { key: 'kts', label: 'KTS', min: 0, max: 400, accent: '#7dff9a' },
-    { key: 'altFt', label: 'ALT FT', min: 0, max: 1200, accent: '#7db8ff' },
-    { key: 'att', label: 'ATT', att: true },
-    { key: 'hdgDeg', label: 'HDG', min: 0, max: 360, accent: '#ffe9a8' },
-    { key: 'egt', label: 'EGT C', min: 300, max: 900, accent: '#ff9a5a' },
-    { key: 'fuel', label: 'FUEL', min: 0, max: 100, accent: '#7dff9a' },
-  ];
-  const gauges = [];
-  defs.forEach((def, i) => {
-    const canvas = faceCanvas();
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    const x = -0.7 + i * 0.28;
-    const bezel = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.026, 10, 28), bezelMat);
-    bezel.position.set(x, -0.3, -1.02);
-    bezel.rotation.x = -0.5;
-    group.add(bezel);
-    const face = new THREE.Mesh(
-      new THREE.CircleGeometry(0.145, 28),
-      new THREE.MeshBasicMaterial({ map: tex }),
-    );
-    face.position.set(x, -0.3, -1.01);
-    face.rotation.x = -0.5;
-    group.add(face);
-    gauges.push({ def, canvas, tex });
+  const panoCanvas = makeCanvas(PANO_W, PANO_H);
+  const panoTex = new THREE.CanvasTexture(panoCanvas);
+  panoTex.colorSpace = THREE.SRGBColorSpace;
+  const screen = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.75, 0.574),
+    new THREE.MeshBasicMaterial({ map: panoTex }),
+  );
+  screen.position.set(0, -0.4, -1.485);
+  screen.rotation.x = -0.4;
+  group.add(screen);
+
+  // Centre pedestal below the screen: small box with its own lit face.
+  const pedBox = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.2, 0.08), panelMat);
+  pedBox.position.set(0, -0.63, -1.35);
+  pedBox.rotation.x = -0.7;
+  group.add(pedBox);
+  const pedCanvas = makeCanvas(PED_W, PED_H);
+  const pedTex = new THREE.CanvasTexture(pedCanvas);
+  pedTex.colorSpace = THREE.SRGBColorSpace;
+  const pedFace = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.58, 0.145),
+    new THREE.MeshBasicMaterial({ map: pedTex }),
+  );
+  // 0.075 ahead of the box centre: the -0.7 tilt swings the box's front
+  // face up-forward, so a smaller offset leaves the face behind it.
+  pedFace.position.set(0, -0.63, -1.275);
+  pedFace.rotation.x = -0.7;
+  group.add(pedFace);
+
+  // Side-stick (right) and throttle (left): small dark shapes at the
+  // panel edges, like the real F-35's controls.
+  const ctrlMat = new THREE.MeshStandardMaterial({
+    color: 0x14181f,
+    metalness: 0.5,
+    roughness: 0.55,
   });
+  const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.16, 10), ctrlMat);
+  stick.position.set(0.92, -0.5, -1.45);
+  stick.rotation.z = -0.3;
+  group.add(stick);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.07, 0.05), ctrlMat);
+  grip.position.set(0.94, -0.42, -1.45);
+  grip.rotation.z = -0.3;
+  group.add(grip);
+  const throttle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.16, 0.09), ctrlMat);
+  throttle.position.set(-0.92, -0.5, -1.45);
+  throttle.rotation.x = -0.3;
+  group.add(throttle);
 
   // Canopy frame: slim pillars left/right and a thin top bar. No centre
   // post — it reads as a black monolith in the middle of the view.
@@ -183,15 +401,12 @@ export function buildCockpit(camera) {
   camera.add(group);
 
   function update(state) {
-    for (const { def, canvas, tex } of gauges) {
-      const g = canvas.getContext('2d');
-      if (def.att) {
-        drawAttitude(g, state.pitchDeg, state.rollDeg);
-      } else {
-        drawRoundGauge(g, state[def.key], def.min, def.max, def.label, null, def.accent);
-      }
-      tex.needsUpdate = true;
-    }
+    const g = panoCanvas.getContext('2d');
+    drawPanoramic(g, state);
+    panoTex.needsUpdate = true;
+    const p = pedCanvas.getContext('2d');
+    drawPedestal(p, state);
+    pedTex.needsUpdate = true;
   }
   group.userData.update = update;
   return group;
