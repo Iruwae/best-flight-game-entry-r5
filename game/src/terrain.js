@@ -61,7 +61,7 @@ function fieldColor(x, z) {
 
 function vertexColor(x, z, h) {
   const slope = slopeAt(x, z);
-  const jitter = 0.92 + hash2(Math.floor(x / 3), Math.floor(z / 3), 11) * 0.16;
+  const jitter = 0.94 + hash2(Math.floor(x / 3), Math.floor(z / 3), 11) * 0.12;
   let c;
   if (h < CFG.world.waterLevel + 1.5) {
     c = [0.76, 0.66, 0.47];
@@ -94,13 +94,14 @@ export function buildTerrain(scene) {
     colors[i * 3 + 2] = c[2];
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  const flat = geo.toNonIndexed();
-  flat.computeVertexNormals();
+  // Smooth normals on the indexed grid: the dusk light rolls over the
+  // hills instead of catching every triangle edge, so the valley reads
+  // as smooth ground with soft colour variation, not a faceted shell.
+  geo.computeVertexNormals();
   const mesh = new THREE.Mesh(
-    flat,
+    geo,
     new THREE.MeshStandardMaterial({
       vertexColors: true,
-      flatShading: true,
       roughness: 0.95,
       metalness: 0,
     }),
@@ -131,10 +132,9 @@ export function buildTerrain(scene) {
 
 function plantTrees(scene) {
   const rng = mulberry32(41);
-  const cone = new THREE.ConeGeometry(3.2, 10, 7);
-  const trunk = new THREE.CylinderGeometry(0.55, 0.8, 3.4, 6);
+  const cone = new THREE.ConeGeometry(3.2, 10, 12);
+  const trunk = new THREE.CylinderGeometry(0.55, 0.8, 3.4, 10);
   const leafMat = new THREE.MeshStandardMaterial({
-    flatShading: true,
     roughness: 0.9,
   });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3220, roughness: 1 });
@@ -173,10 +173,9 @@ function plantTrees(scene) {
 
 function scatterRocks(scene) {
   const rng = mulberry32(97);
-  const geo = new THREE.DodecahedronGeometry(2.4, 0);
+  const geo = new THREE.DodecahedronGeometry(2.4, 1);
   const mat = new THREE.MeshStandardMaterial({
     color: 0x6a625a,
-    flatShading: true,
     roughness: 1,
   });
   const rocks = new THREE.InstancedMesh(geo, mat, T.rockCount);

@@ -1,6 +1,16 @@
 /* Ember Fjord — HUD and menu styling. Dark glass panels, warm amber
    accents, and type that stays readable over a bright dusk sky. */
 
+/* A soft vignette over the 3D view only: it rounds the frame off and
+   pulls the eye to the jet, without touching the HUD or the menu. */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(10, 8, 20, 0.22) 100%);
+  z-index: 4;
+}
+
 .hud {
   position: fixed;
   inset: 0;

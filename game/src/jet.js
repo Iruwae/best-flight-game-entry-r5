@@ -30,9 +30,9 @@ function extrudeFlat(shape, thick, mat) {
   const geo = new THREE.ExtrudeGeometry(shape, {
     depth: thick,
     bevelEnabled: true,
-    bevelThickness: 0.06,
-    bevelSize: 0.08,
-    bevelSegments: 1,
+    bevelThickness: 0.08,
+    bevelSize: 0.12,
+    bevelSegments: 3,
   });
   geo.rotateX(-Math.PI / 2);
   const mesh = new THREE.Mesh(geo, mat);
@@ -84,7 +84,7 @@ export function buildJet() {
     [0.48, 14.2],
     [0.42, 15.2],
   ].map(([r, y]) => new THREE.Vector2(r, y));
-  const bodyGeo = new THREE.LatheGeometry(profile, 20);
+  const bodyGeo = new THREE.LatheGeometry(profile, 28);
   bodyGeo.rotateX(Math.PI / 2);
   bodyGeo.translate(0, 0, -J.length / 2);
   const body = new THREE.Mesh(bodyGeo, white);
@@ -92,19 +92,19 @@ export function buildJet() {
   jet.add(body);
 
   // Orange nose tip + orange band behind the canopy.
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.46, 1.4, 16), orange);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.46, 1.4, 24), orange);
   nose.rotation.x = -Math.PI / 2;
   nose.position.set(0, 0, -J.length / 2 - 0.4);
   nose.castShadow = true;
   jet.add(nose);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.9, 20), orange);
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.9, 28), orange);
   band.rotation.x = Math.PI / 2;
   band.position.set(0, 0.05, -1.6);
   jet.add(band);
 
   // Bubble canopy: dark glass.
   const canopy = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 20, 14),
+    new THREE.SphereGeometry(1, 28, 20),
     new THREE.MeshStandardMaterial({
       color: J.glassColor,
       metalness: J.glassMetal,
@@ -141,7 +141,10 @@ export function buildJet() {
     finShape.closePath();
     const finGeo = new THREE.ExtrudeGeometry(finShape, {
       depth: 0.2,
-      bevelEnabled: false,
+      bevelEnabled: true,
+      bevelThickness: 0.05,
+      bevelSize: 0.05,
+      bevelSegments: 2,
     });
     const fin = new THREE.Mesh(finGeo, navy);
     fin.castShadow = true;
@@ -166,14 +169,14 @@ export function buildJet() {
 
   // Afterburner: nozzle, flame cone, glow sprite and a point light.
   const nozzle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.52, 0.62, 1.3, 16),
+    new THREE.CylinderGeometry(0.52, 0.62, 1.3, 24),
     std(0x2a2d33, 0.35, 0.8),
   );
   nozzle.rotation.x = Math.PI / 2;
   nozzle.position.set(0, 0, J.length / 2 + 0.4);
   jet.add(nozzle);
   const flame = new THREE.Mesh(
-    new THREE.ConeGeometry(0.52, 3.6, 16, 1, true),
+    new THREE.ConeGeometry(0.52, 3.6, 24, 1, true),
     new THREE.MeshBasicMaterial({
       color: J.afterburner.mid,
       transparent: true,
@@ -187,7 +190,7 @@ export function buildJet() {
   flame.position.set(0, 0, J.length / 2 + 2.6);
   jet.add(flame);
   const flameCore = new THREE.Mesh(
-    new THREE.ConeGeometry(0.26, 2.4, 12, 1, true),
+    new THREE.ConeGeometry(0.26, 2.4, 20, 1, true),
     new THREE.MeshBasicMaterial({
       color: J.afterburner.core,
       transparent: true,
@@ -200,7 +203,7 @@ export function buildJet() {
   flameCore.rotation.x = Math.PI / 2;
   flameCore.position.set(0, 0, J.length / 2 + 2.0);
   jet.add(flameCore);
-  const glow = glowSprite('rgba(255, 140, 40, 0.9)', 5.5);
+  const glow = glowSprite('rgba(255, 140, 40, 0.9)', 4.2);
   glow.position.set(0, 0, J.length / 2 + 1.6);
   jet.add(glow);
   const light = new THREE.PointLight(0xff7a1a, 2.5, 34, 1.8);
@@ -215,7 +218,7 @@ export function buildJet() {
   ];
   for (const [c, x, y, z] of tipLights) {
     const l = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 8, 6),
+      new THREE.SphereGeometry(0.2, 12, 8),
       new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 3 }),
     );
     l.position.set(x, y, z);

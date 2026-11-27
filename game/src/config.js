@@ -15,7 +15,7 @@ export const CFG = {
   // Terrain shape. Peaks rise to ~235 m; the valley floor sits at ~2 m
   // and the fjord channel is carved down to -16 m so water shows.
   terrain: {
-    segments: 180,
+    segments: 220,
     peakHeight: 235,
     snowLine: 95,
     rockLine: 55,

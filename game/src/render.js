@@ -93,7 +93,7 @@ export function createSun(scene) {
     }),
   );
   sprite.position.copy(dir).multiplyScalar(2600);
-  sprite.scale.set(900, 900, 1);
+  sprite.scale.set(620, 620, 1);
   scene.add(sprite);
   return sprite;
 }
