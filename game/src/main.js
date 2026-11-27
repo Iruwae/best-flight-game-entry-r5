@@ -101,10 +101,11 @@ function updateCamera(dt = 0, snap = false) {
   const forward = flight.forward();
   hud.setMode(world.cameraMode);
   if (world.cameraMode === 'cockpit') {
-    camPos.copy(f.pos).addScaledVector(forward, 1.2);
-    camPos.y += 2.0; // High enough to clear the jet's gold canopy dome,
-    // which otherwise fills the lower centre of the frame and covers
-    // the panoramic display's lower half.
+    camPos.copy(f.pos).addScaledVector(forward, 1.4);
+    camPos.y += 1.9; // Pilot's-head height: low and forward, close to
+    // the panel — but still high enough to clear the jet's gold
+    // canopy dome, which otherwise fills the lower centre of the
+    // frame and covers the panoramic display's lower half.
     camTarget.copy(f.pos).addScaledVector(forward, 120);
     camTarget.y += 5;
     cockpit.visible = true;
