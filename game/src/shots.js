@@ -5,7 +5,7 @@
 // shot, so the frame Playwright captures is the frame the judge sees.
 
 import { CFG } from './config.js';
-import { fjordCenter } from './terrain.js';
+import { fjordCenter } from './terrain-combined.js';
 import { MISSIONS } from './missions.js';
 
 function findRing(rings, label) {
@@ -21,7 +21,10 @@ export function placeShot(name, w) {
   const f = w.flight.state;
 
   if (name === 'chase') {
-    f.pos.set(fjordCenter(-440), 56, -440);
+    // Right at RING 1: 25 m out, the ring looms large with the jet
+    // centred on it — the shot reads as threading the ring, not just
+    // flying near one. Tighter chase (16 m) so the F-35's paint reads.
+    f.pos.set(fjordCenter(-405), 56, -405);
     f.yaw = Math.PI;
     f.pitch = 0;
     f.roll = 0.12;
@@ -32,12 +35,14 @@ export function placeShot(name, w) {
     w.mission.score = 0;
     w.mission.ringsHit = 0;
     const ring = findRing(w.rings, 'RING 1');
-    if (ring) ring.setDistance(62);
+    if (ring) ring.setDistance(25);
     w.cameraMode = 'chase';
-    w.chaseDist = CFG.shots.chase.dist;
-    w.chaseHeight = CFG.shots.chase.height;
+    w.chaseDist = 16;
+    w.chaseHeight = 4;
   } else if (name === 'cockpit') {
-    f.pos.set(fjordCenter(-310), 82, -310);
+    // 45 m out from RING 2: big in the windscreen with its label in
+    // frame. RING 1 is marked passed so the HUD labels the ring ahead.
+    f.pos.set(fjordCenter(-285), 79, -285);
     f.yaw = Math.PI;
     f.pitch = 0.02;
     f.roll = -0.08;
@@ -47,11 +52,12 @@ export function placeShot(name, w) {
     w.mission.timeLeft = 146;
     w.mission.score = 100;
     w.mission.ringsHit = 1;
+    if (w.rings[0]) w.rings[0].passed = true;
     const ring = findRing(w.rings, 'RING 2');
-    if (ring) ring.setDistance(71);
+    if (ring) ring.setDistance(45);
     w.cameraMode = 'cockpit';
   } else if (name === 'valley') {
-    f.pos.set(0, 140, -100);
+    f.pos.set(0, 120, -60);
     f.yaw = Math.PI;
     f.pitch = 0;
     f.roll = 0.1;
@@ -62,13 +68,14 @@ export function placeShot(name, w) {
     w.mission.score = 400;
     w.mission.ringsHit = 4;
     const ring = findRing(w.rings, 'RING 3');
-    if (ring) ring.setDistance(152);
+    if (ring) ring.setDistance(108);
     w.cameraMode = 'chase';
     w.chaseDist = CFG.shots.valley.dist;
     w.chaseHeight = CFG.shots.valley.height;
   } else if (name === 'menu') {
     w.hud.root.style.display = 'none';
-    f.pos.set(40, 70, 60);
+    // Off to the valley's east side so the jet clears the menu cards.
+    f.pos.set(350, 120, 250);
     f.yaw = Math.PI;
     f.pitch = 0;
     f.roll = 0.05;

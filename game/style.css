@@ -7,7 +7,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 58%, rgba(10, 8, 20, 0.22) 100%);
+  background: radial-gradient(ellipse at center, transparent 68%, rgba(10, 8, 20, 0.12) 100%);
   z-index: 4;
 }
 
@@ -189,7 +189,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, rgba(20, 12, 30, 0.55), rgba(20, 12, 30, 0.12) 42%, rgba(20, 12, 30, 0.78));
+  /* Light, warm-neutral wash: the old dark-violet gradient (0.55 top /
+     0.78 bottom) is what made the menu sky read grey on top and black
+     below. This keeps the title readable while letting the fjord show. */
+  background: linear-gradient(180deg, rgba(24, 16, 10, 0.30), rgba(24, 16, 10, 0.05) 42%, rgba(24, 16, 10, 0.45));
   z-index: 10;
   font-family: "Segoe UI", system-ui, sans-serif;
 }

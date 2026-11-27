@@ -17,6 +17,10 @@ Serve `game/` with any static server and open `game/index.html` in a desktop bro
 
 ## How it is built
 
-Three.js (vendored as `game/vendor/three.min.js`) over a procedural world: a faceted, vertex-coloured heightfield with checkered valley fields, snow peaks and a water-filled fjord channel; a jet built from lathed and extruded shapes with a glowing afterburner; a 3D cockpit with six lit gauges; and a DOM HUD with speed/altitude tapes, compass, radar and attitude ball. The source is split into one-job modules under `game/src/` — `config`, `random`, `terrain`, `jet`, `rings`, `cockpit`, `hud`, `input`, `flight`, `missions`, `menu`, `shots`, `render`, `main`.
+Three.js (vendored as `game/vendor/three.min.js`) over a procedural world: a faceted, vertex-coloured heightfield with checkered valley fields, snow peaks and a water-filled fjord channel; a real F-35 jet model with a glowing afterburner; a 3D cockpit with six lit gauges; and a DOM HUD with speed/altitude tapes, compass, radar and attitude ball. The source is split into one-job modules under `game/src/` — `config`, `random`, `terrain`, `jet-glb`, `rings`, `cockpit`, `hud`, `input`, `flight`, `missions`, `menu`, `shots`, `render`, `main`.
+
+The F-35 is the low-poly model by S1Priv (Sketchfab, CC BY 4.0) — `game/assets/f35-model.glb`, loaded at runtime by `game/src/jet-glb.js`.
+
+The hero trees are "Oak Tree", "Pine Tree", "Birch Tree", "Weeping Willow" and "Snowy Spruce" by vinish.dev (https://vinish.dev/free-3d-models/), CC BY 4.0 — `game/assets/trees-vinish/`, instanced at runtime by `game/src/terrain-combined.js`. The far forest is procedurally generated with ez-tree (https://github.com/dgreenheck/ez-tree, MIT).
 
 `main.ts` (Node 22, standard library only) hands the entry in: it copies `game/` and `screenshots/` to the output directory and writes `dossier.json` with the vendored make.fun library.

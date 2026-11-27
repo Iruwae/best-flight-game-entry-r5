@@ -5,7 +5,7 @@
 
 import * as THREE from 'three';
 import { CFG } from './config.js';
-import { heightAt } from './terrain.js';
+import { heightAt } from './terrain-combined.js';
 
 const F = CFG.flight;
 const R = CFG.runway;

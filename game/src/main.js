@@ -7,16 +7,9 @@
 
 import * as THREE from 'three';
 import { CFG } from './config.js';
-import { mulberry32 } from './random.js';
-import {
-  createRenderer,
-  createSky,
-  createSun,
-  createClouds,
-  createLights,
-} from './render.js';
-import { buildTerrain, buildRunway } from './terrain.js';
-import { buildJet } from './jet.js';
+import { createRenderer } from './render.js';
+import { buildTerrain, buildRunway, createDaylight, tickWater } from './terrain-combined.js';
+import { buildJet } from './jet-glb.js';
 import { buildRings } from './rings.js';
 import { buildCockpit } from './cockpit.js';
 import { buildHUD } from './hud.js';
@@ -32,10 +25,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 6000);
 scene.add(camera);
 
-createSky(scene);
-createSun(scene);
-createClouds(scene, mulberry32(3));
-createLights(scene);
+createDaylight(scene, renderer);
 buildTerrain(scene);
 buildRunway(scene);
 
@@ -110,8 +100,10 @@ function updateCamera(dt = 0, snap = false) {
     camTarget.y += 5;
     cockpit.visible = true;
   } else if (world.cameraMode === 'scenic') {
-    camPos.set(170, 125, -320);
-    camTarget.set(0, 30, 250);
+    // High over the channel itself, looking down the fjord: any
+    // shoulder spot puts a peak in the foreground.
+    camPos.set(0, 300, -550);
+    camTarget.set(0, 0, 300);
     cockpit.visible = false;
   } else {
     camPos.copy(f.pos).addScaledVector(forward, -world.chaseDist);
@@ -120,6 +112,9 @@ function updateCamera(dt = 0, snap = false) {
     camTarget.y += 0.5;
     cockpit.visible = false;
   }
+  // The GLB jet's gold canopy would fill the cockpit view; hide it
+  // there so the panel stays clear (visible in chase/scenic).
+  if (jet.userData.setCanopyVisible) jet.userData.setCanopyVisible(world.cameraMode !== 'cockpit');
   if (snap || world.frozen) {
     camera.position.copy(camPos);
   } else {
@@ -189,6 +184,7 @@ function loop() {
   updateCamera(dt);
   updateHud();
   cockpit.userData.update(flight.hudState());
+  tickWater(clock.elapsedTime);
   renderer.render(scene, camera);
   input.endFrame();
 }
@@ -204,7 +200,13 @@ window.addEventListener('resize', () => {
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 if (shot) {
-  placeShot(shot, world);
+  // The GLB jet loads async; freeze the frame only once it is in (or
+  // after 5 s, so a failed load never blocks the screenshot).
+  const ready = jet.userData.ready;
+  const wait = ready
+    ? Promise.race([ready, new Promise((r) => setTimeout(r, 5000))])
+    : Promise.resolve();
+  wait.then(() => placeShot(shot, world));
 } else {
   flight.applyTo(jet);
   updateCamera(0, true);

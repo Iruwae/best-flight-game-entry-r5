@@ -5,7 +5,7 @@
 // three different kinds of flying.
 
 import { CFG } from './config.js';
-import { fjordCenter } from './terrain.js';
+import { fjordCenter } from './terrain-combined.js';
 
 function fjordRing(i, z, y) {
   return {

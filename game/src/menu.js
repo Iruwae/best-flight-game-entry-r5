@@ -10,7 +10,7 @@ export function buildMenu(onSelect) {
     <div class="menu-inner">
       <div class="menu-kicker">MAKE.FUN · BEST FLIGHT GAME</div>
       <h1 class="menu-title">EMBER<br>FJORD</h1>
-      <p class="menu-sub">A dusk flight through the fjord — rings, slalom, runway 18.</p>
+      <p class="menu-sub">A daylight flight through the fjord — rings, slalom, runway 18.</p>
       <div class="menu-cards"></div>
       <p class="menu-controls">Arrows fly · Shift throttle · Ctrl cut throttle · C camera · R restart · Mouse drag steers</p>
       <p class="menu-foot">Ember Fjord — an original flight game. No two sorties fly the same.</p>
