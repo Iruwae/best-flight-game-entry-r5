@@ -41,15 +41,17 @@ export const CFG = {
     lowColor: 0xffb066,
   },
 
-  // The jet. Orange wings and tail over a white fuselage, navy intakes,
-  // blue glass canopy — built to read at a glance against dusk terrain.
+  // The jet. F-35 Lightning II: gray low-visibility stealth paint,
+  // gold bubble canopy — built to read as a real fighter against the
+  // dusk valley, the gold canopy the one warm accent.
   jet: {
-    bodyColor: 0xf2f0ea,
-    orange: 0xff6a1a,
-    navy: 0x1a2a4a,
-    glassColor: 0x0a2438,
-    glassMetal: 0.9,
-    glassRough: 0.12,
+    bodyColor: 0xa9aeb6,
+    wingColor: 0x9aa0a8,
+    tailColor: 0x9298a0,
+    intakeColor: 0x2a2d33,
+    glassColor: 0xe8c547,
+    glassMetal: 1.0,
+    glassRough: 0.18,
     span: 11.4,
     length: 15.2,
     afterburner: { core: 0xffd23e, mid: 0xff7a1a, outer: 0xff3d00 },
